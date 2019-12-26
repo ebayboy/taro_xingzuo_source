@@ -1,0 +1,59 @@
+<style lang="less">
+  page {
+    background: #eeeeee;
+  }
+
+</style>
+<template>
+  <view>
+    这是页面
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+
+  export default class index extends wepy.page {
+    config = {
+      navigationBarTitleText: '文章列表'
+    }
+    components = {}
+
+    mixins = []
+
+    data = {}
+
+    computed = {}
+
+    methods = {
+    }
+
+    events = {}
+
+    onLoad() {
+      wepy.setNavigationBarTitle({
+        title: '这是更改后的页面标题'
+      })
+      wepy.setNavigationBarColor({
+        frontColor: '#ffffff',
+        backgroundColor: '#ff0000',
+        animation: {
+          duration: 400,
+          timingFunc: 'easeIn'
+        }
+      })
+      wx.chooseAddress({
+        success(res) {
+          console.log(res.userName)
+          console.log(res.postalCode)
+          console.log(res.provinceName)
+          console.log(res.cityName)
+          console.log(res.countyName)
+          console.log(res.detailInfo)
+          console.log(res.nationalCode)
+          console.log(res.telNumber)
+        }
+      })
+    }
+  }
+</script>

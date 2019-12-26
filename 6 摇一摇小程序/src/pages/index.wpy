@@ -1,0 +1,52 @@
+<style lang="less">
+  page {
+    background: #eeeeee;
+  }
+
+  view {
+    text-align: center;
+    font-size: unit(30, rpx);
+    padding: unit(60, rpx);
+  }
+
+  .title {
+    font-size: unit(60, rpx);
+  }
+
+  .button {
+    font-size: unit(30, rpx);
+    margin-top: 10vh;
+  }
+</style>
+<template>
+  <view>
+    <view class="title">摇一摇游戏</view>
+    <view>
+      <button @tap="game(1)" class="button">参与游戏</button>
+    </view>
+    <view>
+      <button @tap="game(2)" class="button">创建游戏</button>
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+
+  export default class index extends wepy.page {
+    config = {
+      navigationBarTitleText: '摇一摇'
+    }
+    components = {}
+
+    data = {}
+
+    methods = {
+      game(id) {
+        wepy.navigateTo({
+          url: '/pages/input?type=' + id
+        })
+      }
+    }
+  }
+</script>

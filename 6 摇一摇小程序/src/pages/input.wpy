@@ -1,0 +1,136 @@
+<style lang="less">
+  page {
+    background: #eeeeee;
+  }
+
+  view {
+    text-align: center;
+    font-size: unit(30, rpx);
+    padding: unit(60, rpx);
+  }
+
+  input {
+    font-size: unit(30, rpx);
+    padding: 2vw;
+    background-color: white;
+    margin-top: 2vw;
+  }
+
+  .button {
+    font-size: unit(30, rpx);
+    margin-top: 10vh;
+  }
+</style>
+<template>
+  <input placeholder="输入电话号码" bindinput="inputPhone">
+  <input placeholder="输入参与码" bindinput="inputCode">
+  <!--参与者-->
+  <block wx:if="{{type==1}}">
+    <button @tap="join" class="button">参与</button>
+  </block>
+  <!--创建者-->
+  <block wx:if="{{type==2}}">
+    <input placeholder="输入游戏时间" bindinput="inputTime">
+    <button @tap="create" class="button">创建</button>
+  </block>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import wxCommon from '../mixins/wxCommon'
+  import wxCommonUtil from '../mixins/wxCommonUtil'
+
+  export default class input extends wepy.page {
+    config = {
+      navigationBarTitleText: '摇一摇'
+    }
+    components = {}
+
+    data = {
+      phone: '',
+      code: '',
+      time: 0,
+      type: 1
+    }
+    mixins = [wxCommon, wxCommonUtil]
+
+    methods = {
+      //电话号码
+      inputPhone(e) {
+        this.phone = e.detail.value
+        this.$apply()
+      },
+      //参与者号码
+      inputCode(e) {
+        this.code = e.detail.value
+        this.$apply()
+      },
+      //输入活动时间
+      inputTime(e) {
+        this.time = e.detail.value
+        this.$apply()
+      },
+      // 创建游戏
+      create() {
+        // 检测电话内容
+        const that = this
+        if (this.checkPhone(this.phone)) {
+          that.userRequest('/shake/api/activity/create', 'post', {
+            phone: that.phone,
+            time: that.time,
+            code: that.code
+          }, function (res) {
+            if (res.data.code === 0) {
+              wepy.navigateTo({
+                url: '/pages/game?type=admin&code=' + that.code
+              })
+              wepy.setStorageSync('game', res.data.data)
+            }
+            wepy.showModal({
+              title: '提示',
+              content: res.data.message
+            })
+          })
+        } else {
+          wepy.showModal({
+            title: '错误',
+            content: '电话输入错误'
+          })
+        }
+      },
+      //  参与游戏
+      join() {
+        // 检测电话内容
+        const that = this
+        if (this.checkPhone(this.phone)) {
+          that.userRequest('/shake/api/activity/join', 'post', {
+            phone: that.phone,
+            code: that.code
+          }, function (res) {
+            if (res.data.code === 0) {
+              wepy.navigateTo({
+                url: '/pages/game?code=' + that.code
+              })
+              wepy.setStorageSync('game', res.data.data)
+            }
+            wepy.showModal({
+              title: '提示',
+              content: res.data.message
+            })
+          })
+        } else {
+          wepy.showModal({
+            title: '错误',
+            content: '电话输入错误'
+          })
+        }
+      }
+    }
+
+    onLoad(options) {
+      this.type = options.type
+      this.$apply()
+    }
+
+  }
+</script>

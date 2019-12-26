@@ -1,0 +1,227 @@
+<style lang="less">
+  page {
+    background: #979797;
+  }
+
+  view {
+    text-align: center;
+    font-size: unit(30, rpx);
+    padding: unit(60, rpx);
+  }
+
+  .button {
+    font-size: unit(30, rpx);
+    margin-top: 80vh;
+  }
+
+  @keyframes sh2 {
+    0% {
+      transform: rotate(15deg);
+    }
+    50% {
+      transform: rotate(-15deg);
+    }
+    100% {
+      transform: rotate(15deg);
+    }
+  }
+
+  @keyframes sh1 {
+    0% {
+      transform: rotate(8deg);
+    }
+    50% {
+      transform: rotate(-8deg);
+    }
+    100% {
+      transform: rotate(8deg);
+    }
+  }
+
+  .animation {
+
+  }
+
+  .animation1 {
+    animation: sh1 2000ms ease infinite;
+  }
+
+  .animation2 {
+    animation: sh2 2000ms ease infinite;
+  }
+</style>
+<template>
+  <image class="{{animation}}" src="../public/shake.jpg" mode="widthFix"
+         style="position: absolute;bottom: 30vh;width: 100vw"></image>
+  <button wx:if="{{showStart}}" @tap="start" class="button">开始</button>
+</template>
+<script>
+  import wepy from 'wepy'
+  import wxCommon from '../mixins/wxCommon'
+
+  export default class game extends wepy.page {
+    config = {
+      navigationBarTitleText: '摇一摇'
+    }
+    components = {}
+
+    data = {
+      number: 0,
+      code: '',
+      showStart: false,
+      animation: 'animation',
+      timer: {}
+    }
+    mixins = [wxCommon]
+
+    methods = {
+      start() {
+        const that = this
+        // 从存储中取得数据
+        const game = wepy.getStorageSync('game')
+        that.userRequest('/shake/api/activity/start/' + game.join_id, 'get', {}, function (res) {
+          if (res.data.code === 0) {
+            that.gameStart()
+          }
+          wepy.showModal({
+            title: '提示',
+            content: res.data.message
+          })
+        })
+      }
+    }
+
+    // 游戏开始
+    gameStart() {
+      const that = this
+      const game = wepy.getStorageSync('game')
+      wepy.showLoading({
+        title: '10s后开始'
+      })
+      setTimeout(() => {
+        // 启用传感器
+        wx.startAccelerometer({
+          interval: 'ui'
+        })
+        that.getShakePhone()
+        wepy.showToast({
+          title: '开始!'
+        })
+        that.number = 0
+        that.$apply()
+        that.overGame(game.time)
+      }, 5000)
+    }
+
+    // 结束游戏
+    overGame(time) {
+      console.log(time)
+      const that = this
+      setTimeout(() => {
+        // 停止对于传感器的监听
+        wx.stopAccelerometer()
+        wepy.showToast({
+          title: '结束!'
+        })
+        // 上传数据内容
+        that.sendUserInfo()
+      }, time * 1000)
+    }
+
+    sendUserInfo() {
+      const that = this
+      const game = wepy.getStorageSync('game')
+      that.userRequest('/shake/api/activity/saveData', 'post', {
+        shake: that.number,
+        code: that.code,
+        user_id: game.user_id
+      }, function (res) {
+        if (res.data.code === 0) {
+          wepy.navigateTo({
+            url: '/pages/result?code=' + that.code
+          })
+        }
+        wepy.showModal({
+          title: '提示',
+          content: res.data.message
+        })
+      })
+    }
+
+    // 摇动手机
+    getShakePhone() {
+      const that = this
+      wx.onAccelerometerChange(function (e) {
+        console.log(e.x)
+        console.log(e.y)
+        console.log(e.z)
+        if (e.x < 0.3 && e.y < 0.3) {
+          that.showAnimation(0)
+        } else if (e.x < 1 && e.y < 1) {
+          that.showAnimation(1)
+        } else if (e.x > 1 && e.y > 1) {
+          that.showAnimation(2)
+        }
+      })
+    }
+
+    // 手机动画
+    showAnimation(level) {
+      switch (level) {
+        case 1:
+          this.animation = 'animation1'
+          this.number = this.number + 1
+          wx.vibrateShort()
+          break
+        case 2:
+          this.animation = 'animation2'
+          this.number = this.number + 1
+          wx.vibrateLong()
+          break
+        default:
+          this.animation = 'animation'
+      }
+      console.log(this.number)
+      this.$apply()
+    }
+
+    // 定时取得是否已经开始
+    getStart() {
+      const that = this
+      const game = wepy.getStorageSync('game')
+      that.userRequest('/shake/api/activity/getStart/' + game.join_id, 'get', {}, function (res) {
+        if (res.data.code === 0) {
+          if (res.data.data.is_over === 1) {
+            // 停止该定时器
+            clearInterval(that.timer)
+            that.gameStart()
+          }
+        } else {
+          wepy.showModal({
+            title: '提示',
+            content: res.data.message
+          })
+        }
+      })
+    }
+
+    onLoad(options) {
+      const that = this
+      wepy.showLoading({
+        title: '等待开始'
+      })
+      if (options.type === 'admin') {
+        //  创建者
+        wepy.hideLoading()
+        this.showStart = true
+      } else {
+        that.timer = setInterval(() => {
+          that.getStart()
+        }, 2000)
+      }
+      this.code = options.code
+      this.$apply()
+    }
+
+  }
+</script>

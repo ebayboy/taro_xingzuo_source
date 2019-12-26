@@ -1,0 +1,109 @@
+<style lang="less">
+
+</style>
+<template>
+  <view class="content">
+    <repeat for="{{questionnaireData}}" item="item">
+      <view style="padding-bottom: 10vw">
+        <view>{{item.id}}、{{item.question}}</view>
+        <view wx:if="{{item.type=='input'}}">
+          <input style="border: 1rpx solid #c9c9c9;padding: 10rpx;margin-top: 10rpx" id="{{item.name}}"
+                 bindinput="bindKeyInput" placeholder="请填写"/>
+        </view>
+        <view wx:if="{{item.type=='checkbox'}}">
+          <checkbox-group id="{{item.name}}" bindchange="checkboxChange">
+            <repeat for="{{item.answer}}" item="answerItem">
+              <view style="padding: 10rpx">
+                <checkbox id="{{answerItem.key}}" value="{{answerItem.value}}"/>
+                {{answerItem.key}}.{{answerItem.value}}
+              </view>
+            </repeat>
+          </checkbox-group>
+        </view>
+        <view wx:else>
+          <radio-group id="{{item.name}}" class="radio-group" bindchange="radioChange">
+            <repeat for="{{item.answer}}" item="answerItem">
+              <view style="padding: 10rpx">
+                <radio id="{{answerItem.key}}" value="{{answerItem.value}}"/>
+                {{answerItem.key}}.{{answerItem.value}}
+              </view>
+            </repeat>
+          </radio-group>
+        </view>
+      </view>
+    </repeat>
+    <button @tap="submitQuestionnaire"
+            style="width: 50vw;font-size: 30rpx">提交
+    </button>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+
+
+  export default class Index extends wepy.page {
+
+    components = {}
+
+    mixins = []
+
+    data = {
+      tempData: '{}',
+      q_id: '',
+      questionnaireData: []
+    }
+
+    // 在答案中增加参数
+    changeData(id, data) {
+      let tempArray = JSON.parse(this.tempData)
+      tempArray[id] = data
+      // console.log(temp_array)
+      this.tempData = JSON.stringify(tempArray)
+      this.$apply()
+    }
+
+    // 提交问卷
+    submit() {
+      wepy.request({url: 'http://www.uneedzf.com/wepyBook/api/questionnaire', method: 'post',data:{data:JSON.parse(this.tempData),q_id:this.q_id}}).then((res) => {
+        wepy.showModal({
+          title: '提示',
+          content: res.data.message
+        })
+      })
+    }
+
+    methods = {
+      submitQuestionnaire() {
+        this.submit()
+      },
+      bindKeyInput(e) {
+        this.changeData(e.target.id, e.detail.value)
+      },
+      radioChange(e) {
+        this.changeData(e.target.id, e.detail.value)
+      },
+      checkboxChange(e) {
+        this.changeData(e.target.id, e.detail.value)
+      }
+    }
+
+    events = {}
+
+    onLoad() {
+      const that = this
+      wepy.request({url: 'http://www.uneedzf.com/wepyBook/api/questionnaire'}).then((res) => {
+        if (res.data.code === 0) {
+          that.questionnaireData = res.data.data.data
+          that.q_id = res.data.data.q_id
+          that.$apply()
+        } else {
+          wepy.showModal({
+            title: '错误',
+            content: res.data.message
+          })
+        }
+      })
+    }
+  }
+</script>

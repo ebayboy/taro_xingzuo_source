@@ -1,0 +1,60 @@
+<style lang="less">
+  .panel {
+    background-color: #fff;
+    width: 90%;
+    height: 10rem;
+    border: 1px solid #c9c9c9;
+    border-radius: 10px;
+    margin-bottom: 5%;
+    overflow: hidden;
+  }
+  .panel_img{
+    width: 100%;
+    height: 7rem;
+    overflow: hidden;
+  }
+  .panel_img{
+    width: 100%;
+    height: 7rem;
+  }
+  .panel_text{
+    padding-top: 0.4rem;
+    font-size: 0.6rem;
+    padding-left: 20px;
+  }
+  .case-content {
+    position: relative;
+    -webkit-box-shadow: 0 1px 4px rgba(0,0,0,0.3),0 0 40px rgba(0,0,0,0.1) inset;
+    -moz-box-shadow: 0 1px 4px rgba(0,0,0,0.3),0 0 40px rgba(0,0,0,0.1) inset;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3),0 0 40px rgba(0,0,0,0.1) inset;
+    -o-box-shadow:0 1px 4px rgba(0,0,0,0.3),0 0 40px rgba(0,0,0,0.1) inset;
+  }
+
+</style>
+<template>
+  <view>
+    <navigator url="/pages/webView?type={{item.url}}" hover-class="navigator-hover">
+      <view class="panel case-content">
+        <view class="panel_img">
+          <image class="panel_img" src="{{item.pic}}"></image>
+        </view>
+        <view class="panel_text" style="font-weight:bold">
+          {{item.name}}
+        </view>
+        <view class="panel_text" style="color:#ababab">
+          {{item.time}}
+        </view>
+      </view>
+    </navigator>
+  </view>
+
+</template>
+<script>
+  import wepy from 'wepy'
+
+  export default class aCard extends wepy.component {
+    props = {
+      item: {}
+    };
+  }
+</script>

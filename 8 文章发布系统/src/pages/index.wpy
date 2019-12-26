@@ -1,0 +1,147 @@
+<style lang="less">
+  page {
+    background: #eeeeee;
+  }
+
+  .article {
+    margin-left: 5vw;
+    margin-top: 5vw;
+    background: #fff;
+    width: 90vw;
+    border: 1px solid #fff;
+    height: 25vw;
+    position: relative;
+    font-size: unit(30, rpx);
+  }
+
+  .articleImg {
+    position: absolute;
+    border-radius: 5vw;
+    left: 2.5vw;
+    top: 2.5vw;
+    width: 20vw;
+    height: 20vw;
+  }
+
+  .articleView {
+    position: absolute;
+    left: 30vw;
+    top: 5vw;
+  }
+
+  .articleNum {
+    position: absolute;
+    left: 30vw;
+    font-size: unit(25, rpx);
+    color: #ababab;
+    bottom: 10vw;
+  }
+
+  .articleTime {
+    position: absolute;
+    left: 30vw;
+    font-size: unit(25, rpx);
+    color: #ababab;
+    bottom: 5vw;
+  }
+
+  .pageNum {
+    position: relative;
+    background-color: white;
+    width: 10vw;
+    height: 10vw;
+    border: 1px solid #eeeeee;
+    margin: 3vw;
+    text-align: center;
+    font-size: unit(30, rpx);
+  }
+</style>
+<template>
+  <repeat for="{{articles}}" item="item">
+    <view @tap="getArticle({{item.id}})" class="article">
+      <image class="articleImg" src="../public/logo.jpg"></image>
+      <view class="articleView">
+        {{item.article_name}}
+      </view>
+      <view class="articleTime">
+        {{item.created_at}}
+      </view>
+      <view class="articleNum">
+        浏览次数：{{item.article_view}}
+      </view>
+    </view>
+  </repeat>
+  <repeat for="{{totalPage}}" item="item">
+    <view @tap="pageChange({{item}})" class="pageNum">
+      <text style="position: absolute;top: -20rpx;left: 0;width: 100%">
+        {{item}}
+      </text>
+    </view>
+  </repeat>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import wxCommon from '../mixins/wxCommon'
+
+  export default class index extends wepy.page {
+    config = {
+      navigationBarTitleText: '文章列表'
+    }
+    components = {}
+
+    mixins = [wxCommon]
+
+    data = {
+      page: 1,
+      allPages: 1,
+      articles: [],
+      totalPage: []
+    }
+
+    computed = {}
+
+    methods = {
+      getArticle(id) {
+        wx.navigateTo({
+          url: '/pages/article?id=' + id,
+        })
+      },
+      pageChange(page) {
+        // console.log(page)
+        this.page = page
+        this.$apply()
+        this.getArticles()
+      }
+    }
+
+    events = {}
+
+    getArticles() {
+      const that = this
+      //  获取文章列表
+      this.userRequest('/cms/api/articles/' + this.page, 'get', {}, function (res) {
+        that.totalPage = []
+        if (res.data.code === 0) {
+          for (let i = 1; i <= res.data.data.totalPage; i++) {
+            that.totalPage.push(i)
+          }
+          that.articles = res.data.data.article
+          that.$apply()
+        } else {
+          wepy.showModal({
+            title: '提示',
+            content: res.data.message
+          })
+        }
+      })
+    }
+
+    onLoad() {
+      const that = this
+      this.userLogin(() => {
+        that.getArticles()
+      })
+    }
+  }
+</script>

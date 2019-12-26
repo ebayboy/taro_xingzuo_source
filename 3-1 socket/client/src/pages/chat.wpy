@@ -1,0 +1,154 @@
+<style lang="less">
+  .page {
+    position: fixed;
+    height: 100vh;
+    width: 100vw;
+    background: #e8e9d2;
+  }
+
+  .chats {
+    text-align: center;
+    margin: 10vh 10vh 10vw 10vw;
+    height: 65vh;
+    width: 80vw;
+    background-color: aliceblue;
+    overflow: auto;
+
+  }
+
+  .chatInput {
+    background: aliceblue;
+    height: 40rpx;
+    font-size: 20rpx;
+    padding: 10rpx;
+    width: 70vw;
+    margin-left: 15vw;
+    border-radius: 20rpx;
+    margin-bottom: 3vh;
+  }
+
+  .btn {
+    width: 70vw;
+    margin-left: 15vw;
+  }
+</style>
+<template>
+  <view class="page">
+    <view class="chats">
+      <repeat for="{{chats}}" item="item">
+        <view style="font-size: 20rpx;color: #ababab">{{item.time}}</view>
+        <view style="font-size: 25rpx;padding-bottom: 20rpx">{{item.text}}</view>
+      </repeat>
+    </view>
+    <view class="chatInput">
+      <input placeholder="请输入聊天内容" bindinput="userSay"/>
+    </view>
+    <button @tap="sendMessage" size="mini" class="btn">
+      发送消息
+    </button>
+
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  // 监听是否打开的状态量
+  let socketOpen = false
+  export default class chat extends wepy.page {
+    components = {}
+
+    mixins = []
+
+    data = {
+      say: '',
+      chats: [{time: '聊天开始', text: ''}]
+    }
+
+    methods = {
+      // 用户输入相关的内容
+      userSay(e) {
+        this.say = e.detail.value
+        this.$apply()
+      },
+      //  发送对话
+      sendMessage() {
+        let time = new Date()
+        this.chats = this.chats.concat([{time: time.toLocaleTimeString(), text: '我说：' + this.say}])
+        this.handleSendMessage()
+        this.$apply()
+      }
+    }
+
+    // 启动一个socket
+    startSocket() {
+      wepy.connectSocket({
+        url: 'ws://127.0.0.1:8080'
+      })
+    }
+
+    wssInit() {
+      const that = this
+      this.startSocket()
+      // 链接失败显示
+      wepy.onSocketError(function (res) {
+        socketOpen = false
+        console.log('WebSocket连接打开失败，请检查！', res)
+        setTimeout(() => {
+          that.startSocket()
+        }, 2000)
+      })
+      // 监听连接成功
+      wepy.onSocketOpen(function (res) {
+        socketOpen = true
+        console.log('WebSocket连接已打开！')
+        //  接收服务器的信息
+        that.receiveMessage()
+      })
+    }
+
+    // 接收服务器的消息
+    receiveMessage() {
+      const that = this
+      if (socketOpen) {
+        console.log('读取socket服务器……')
+        wepy.onSocketMessage(function (res) {
+          let time = new Date()
+          console.log('收到服务器内容：', res)
+          let resData = JSON.parse(res.data)
+          console.log(resData)
+          if (resData.data) {
+            that.chats = that.chats.concat([{time: time.toLocaleTimeString(), text: '服务器说：' + resData.data}])
+            that.$apply()
+          }
+        })
+      } else {
+        //  未打开状态需要延时重新调用
+        console.log('服务器没有连接')
+        setTimeout(() => {
+          that.receiveMessage()
+        }, 2000)
+      }
+    }
+
+    // 向服务器发送消息
+    handleSendMessage() {
+      const that = this
+      console.log('尝试向服务器发送消息：')
+      console.log(that.say)
+      wepy.sendSocketMessage({
+        data: JSON.stringify({data: that.say})
+      })
+    }
+
+    events = {}
+
+    onLoad() {
+      const that = this
+      // 延迟启动socket
+      setTimeout(() => {
+        that.wssInit()
+      }, 2000)
+
+    }
+  }
+</script>

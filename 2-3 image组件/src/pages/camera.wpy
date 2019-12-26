@@ -1,0 +1,121 @@
+<style lang="less">
+  .controls {
+    width: 100vw;
+    height: 100vh;
+  }
+
+  .coverImg {
+    position: fixed;
+    left: 1vw;
+    top: 25vh;
+    width: 96vw;
+    height: 96vw;
+    border: 1vw solid #fff7cc;
+  }
+
+  .input {
+    position: fixed;
+    width: 60vw;
+    left: 20vw;
+    border-radius: 5vw;
+    height: 10vw;
+    text-align: center;
+    color: #fff;
+    font-size: unit(28, rpx);
+  }
+</style>
+<template>
+  <view style="position: fixed;width:100vw;">
+    <camera device-position="front" flash="off" binderror="error"
+            style="width: 100vw; height: 100vh;">
+      <cover-view class="controls">
+        <cover-view class="coverImg">
+        </cover-view>
+        <cover-view style="bottom: 20vh;text-align:center;position: fixed;color: #fff;font-size: 28rpx;width: 100vw">
+          请您框内的图片将会作为您的抽奖头像
+        </cover-view>
+        <button @tap="takePic" class="input" style="bottom:10vh;color: #000">点击拍照</button>
+      </cover-view>
+    </camera>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+
+  export default class camera extends wepy.page {
+    components = {}
+
+    data = {
+      imgPath: '',
+      imgWidth: 0,
+      imgHeight: 0
+    }
+
+    computed = {}
+
+    methods = {
+      takePic() {
+        const that = this
+        const ctx = wx.createCameraContext()
+        wx.showLoading()
+        ctx.takePhoto({
+            // quality: 'high',
+            success: (res) => {
+              that.imgPath = res.tempImagePath
+              that.$apply()
+              wx.getImageInfo({
+                src: that.imgPath,
+                success: (res) => {
+                  that.imgWidth = res.width
+                  that.imgHeight = res.height
+                  wx.saveFile({
+                    tempFilePath: that.imgPath,
+                    success(res) {
+                      wepy.setStorageSync('userImg', {
+                        path: res.savedFilePath,
+                        width: that.imgWidth,
+                        height: that.imgHeight
+                      })
+                      setTimeout(() => {
+                        wx.hideLoading()
+                        wepy.reLaunch({
+                          url: '跳转回的路径'
+                        })
+                      }, 2000)
+                    }
+                  })
+                  // wepy.setStorageSync('userImg', {path: that.imgPath, width: that.imgWidth, height: that.imgHeight})
+                }
+              })
+            },
+            fail(res) {
+              console.log('takePhoto fail res')
+              console.log(res)
+            },
+            complete(res) {
+              console.log('takePhoto complete res')
+              console.log(res)
+            }
+          }
+        )
+      }
+      ,
+      error(e) {
+        console.log(e.detail)
+      }
+
+    }
+
+    events = {}
+
+    onLoad() {
+      let userImg = wepy.getStorageSync('userImg')
+      wx.removeSavedFile({
+        filePath: userImg.path, success: (res) => {
+          console.log(res)
+        }
+      })
+    }
+  }
+</script>

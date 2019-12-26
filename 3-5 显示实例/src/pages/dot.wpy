@@ -1,0 +1,29 @@
+<style lang="less">
+</style>
+<template>
+
+</template>
+
+<script>
+  import wepy from 'wepy'
+
+  export default class dot extends wepy.page {
+    components = {}
+
+    mixins = []
+
+    data = {}
+
+    computed = {}
+
+    methods = {}
+
+    events = {}
+
+    onLoad() {
+      // 消除红点和文字
+      wx.hideTabBarRedDot({index: 1})
+      wx.removeTabBarBadge({index: 1})
+    }
+  }
+</script>

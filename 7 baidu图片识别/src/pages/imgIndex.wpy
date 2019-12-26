@@ -1,0 +1,118 @@
+<style lang="less">
+  .showImage {
+    width: 80vw;
+    background-color: aliceblue;
+    margin-left: 10vw;
+    margin-top: 10vh;
+    height: 70vh;
+  }
+
+  .showDetail {
+    width: 100vw;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1;
+  }
+
+  .showTest {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    width: 100%;
+  }
+
+  .text {
+    background-color: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    font-size: 25rpx;
+    height: 70vh;
+    width: 70vw;
+    border-radius: 50rpx;
+  }
+</style>
+<template>
+  <!--显示相关信息-->
+  <view @tap="hideDetail" class="showDetail" style="display: {{showDetail}}">
+    <view class="showTest">
+      <view class="text">
+        <repeat for="{{details}}" item="item">
+          <view style="padding: 10px">
+            <text> 您的图片有 {{item.score}} 的可能是{{item.keyword}},属于{{item.root}}</text>
+          </view>
+        </repeat>
+      </view>
+    </view>
+  </view>
+  <!--显示图片-->
+  <view class="showImage">
+    <image src="{{uploadImage}}" mode="aspectFit" style="height: 70vh;width: 80vw"></image>
+  </view>
+  <view>
+    <button size="mini" style="width:60vw;margin-top:5vh;margin-left: 20vw" @tap="imgUp">上传图片识别</button>
+  </view>
+</template>
+<script>
+  import wepy from 'wepy'
+
+  export default class imgIndex extends wepy.page {
+    config = {
+      navigationBarTitleText: 'imgUpload'
+    }
+    components = {}
+
+    data = {
+      showDetail: 'none',
+      uploadImage: '',
+      details: []
+    }
+
+    computed = {}
+
+    methods = {
+      hideDetail() {
+        this.showDetail = 'none'
+        this.$apply()
+      },
+      imgUp() {
+        const that = this
+        wepy.chooseImage({
+          count: 1, // 默认9
+          sizeType: ['compressed'], // 可以指定是原图还是压缩图，默认二者都有
+          sourceType: ['album', 'camera'] // 可以指定来源是相册还是相机，默认二者都有
+        }).then((res) => {
+          wepy.showLoading({
+            title:'正在处理中…'
+          })
+          let tempFilePaths = res.tempFilePaths
+          wepy.uploadFile({
+            url: that.$parent.globalData.url + '/baidu/api/wx/uploadImg',
+            filePath: tempFilePaths[0],
+            name: 'image'
+          }).then((res) => {
+            // console.log(res.data.code)
+            // 这里有个问题，返回的数据是字符串
+            let returnData = JSON.parse(res.data)
+            wepy.hideLoading()
+            if (returnData.code === 0) {
+              that.uploadImage = returnData.data.imgUrl
+              that.details = returnData.data.result
+              that.showDetail = 'true'
+              that.$apply()
+            } else {
+              wepy.showModal({
+                title: '错误',
+                content: returnData.message
+              })
+            }
+          })
+        })
+      }
+    }
+
+    onLoad() {
+    }
+  }
+</script>

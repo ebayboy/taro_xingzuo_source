@@ -1,0 +1,209 @@
+<style lang="less">
+  @import "../wxParse/wxParse.wxss";
+
+  .articleTitle {
+    width: 100vw;
+    height: 60vw;
+    background: #eee;
+    position: relative;
+  }
+
+  .title {
+    position: absolute;
+    top: 29vw;
+    font-size: unit(35, rpx);
+    color: #fff;
+    width: 100vw;
+    text-align: center;
+  }
+
+  .articleTime {
+    position: absolute;
+    right: 2vw;
+    top: 55vw;
+    font-size: unit(25, rpx);
+    color: #fff;
+  }
+
+  .articlePoint {
+    position: absolute;
+    left: 2vw;
+    top: 55vw;
+    font-size: unit(25, rpx);
+    color: #fff;
+  }
+
+  .talk {
+    font-size: unit(25, rpx);
+    padding: 5vw;
+    border-top: 1px solid #eeeeee;
+    position: relative;
+  }
+
+  .fix {
+    position: absolute;
+  }
+
+  .article {
+    min-height: 50vh;
+  }
+
+  .input {
+    padding: 2vw;
+    border: 1px solid #eee;
+    font-size: unit(25, rpx);
+    position: relative;
+    min-height: 8vw;
+  }
+
+</style>
+<template>
+  <view class="articleTitle">
+    <image src="{{radNum}}" mode="widthFix" style="width: 100vw"></image>
+    <view class="title">
+      {{article.article_name}}
+    </view>
+    <view class="articleTime">
+      {{article.created_at}}
+    </view>
+    <view @tap="point" class="articlePoint">
+      点赞 ：{{article.article_point}}
+    </view>
+  </view>
+  <!--显示文章-->
+  <view class="article" style="padding: 5vw">
+    <import src="../wxParse/wxParse.wxml"/>
+    <block wx:for="{{htmlParserTpl.nodes}}" wx:key="{{index}}">
+      <template is="wxParse0" data="{{item}}"/>
+    </block>
+  </view>
+  <!--评论框-->
+  <view class="input">
+    <input style="width: 70vw;position: absolute;left: 5vw;" bindinput="talk"/>
+    <button @tap="sendTalk" style="position: absolute;width: 20vw;right: 2vw;" size="mini">评论</button>
+  </view>
+  <!--显示评论-->
+  <view>
+    <repeat for="{{talks}}" item="item">
+      <view class="talk">
+        <view class="fix" style="width: 60vw;left: 5vw">
+          {{item.value}}
+        </view>
+        <view class="fix" style="width: 40vw;right: 0;color: #ababab">
+          {{item.created_at}}
+        </view>
+      </view>
+    </repeat>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import wxCommonUtil from '../mixins/wxCommonUtil'
+  import wxCommon from '../mixins/wxCommon'
+  import WxParse from '../wxParse/wxParse.js'
+
+  export default class article extends wepy.page {
+    config = {
+      navigationBarTitleText: '文章详情'
+    }
+    components = {}
+
+    mixins = [wxCommonUtil, wxCommon]
+
+    data = {
+      articleId: 0,
+      article: {},
+      radNum: '../public/1.jpg',
+      content: {},
+      htmlParserTpl: {},
+      talks: [],
+      talk: ''
+    }
+
+    computed = {}
+
+    methods = {
+      // 点赞
+      point() {
+        const that = this
+        this.userRequest('/cms/api/articleFun/point/' + this.articleId, 'get', {}, function (res) {
+          if (res.data.code === 0) {
+            that.article.article_point = res.data.data.article_point
+            that.$apply()
+          }
+          wepy.showModal({
+            title: '提示',
+            content: res.data.message
+          })
+        })
+      },
+      // 绑定输入方法
+      talk(e) {
+        this.talk = e.detail.value
+        this.$apply()
+      },
+      // 发送评论
+      sendTalk() {
+        this.userRequest('/cms/api/articleFun/talk', 'post', {
+          value: this.talk,
+          id: this.articleId
+        }, function (res) {
+          wepy.showModal({
+            title: '提示',
+            content: res.data.message
+          })
+        })
+      }
+    }
+
+    events = {}
+
+    // 取得
+    getArticle(id) {
+      const that = this
+      //  获取文章列表
+      this.userRequest('/cms/api/article/' + id, 'get', {}, function (res) {
+        if (res.data.code === 0) {
+          that.article = res.data.data
+          that.talks = res.data.data.talks
+          let content = res.data.data.article_text
+          /**
+           * WxParse.wxParse(bindName , type, data, target,imagePadding)
+           * 1.bindName绑定的数据名(必填)
+           * 2.type可以为html或者md(必填)
+           * 3.data为传入的具体数据(必填)
+           * 4.target为Page对象,一般为this(必填)
+           * 5.imagePadding为当图片自适应是左右的单一padding(默认为0,可选)
+           */
+          let htmlContent = WxParse.wxParse('content', 'html', content, that, 5);
+          console.log(htmlContent)
+          that.htmlParserTpl = htmlContent['content']
+          that.$apply()
+          console.log(that.content)
+        } else {
+          wepy.showModal({
+            title: '提示',
+            content: res.data.message
+          })
+        }
+      })
+    }
+
+    onLoad(options) {
+      let tempNum = this.randomNum(1, 3)
+      this.radNum = '../public/' + tempNum + '.jpg'
+      this.$apply()
+      if (options.id) {
+        this.getArticle(options.id)
+        this.articleId = options.id
+        this.$apply()
+      } else {
+        wepy.showModal({
+          title: '提示',
+          content: '您没有选择文章'
+        })
+      }
+    }
+  }
+</script>

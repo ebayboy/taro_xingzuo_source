@@ -1,0 +1,153 @@
+<style type="less">
+  .group {
+    width: 100%;
+    height: 40vh;
+    background-color: #2e9dfe;
+    padding-top: 10vh;
+  }
+
+  .btn_v {
+    padding-top: 5%;
+  }
+
+  .btn {
+    background-color: #fff;
+    width: 60%;
+    color: #2e9dfe;
+    height: 10%;
+    border-radius: 20px;
+  }
+
+  .total {
+    color: #fff;
+    text-align: center;
+    font-size: 80rpx;
+  }
+
+  .before_total {
+    color: #fff;
+    padding-top: 10%;
+    text-align: center;
+    font-size: 25rpx;
+  }
+
+  .after_total {
+    color: #fff;
+    padding-top: 2%;
+    text-align: center;
+    font-size: 25rpx;
+  }
+</style>
+<template>
+  <view class="group">
+    <view class="before_total">活动总赞数</view>
+    <view class="total">{{userInfo.total}}</view>
+    <view class="btn_v">
+      <!--<button class="btn"  open-type="getUserInfo" bindgetuserinfo="bindGetUserInfo">点赞</button>-->
+      <button class="btn" open-type="{{openType}}" bindgetuserinfo="bindGetUserInfo" @tap="">发送给好友集赞</button>
+    </view>
+    <view class="after_total">离活动结束还有{{time}}</view>
+    <view class="after_total" style="color:#fff;" @tap="jumpToRule">活动规则
+      <image src="../public/ask.png" style="width: 10px;height: 10px"></image>
+    </view>
+  </view>
+</template>
+<script>
+  import wepy from 'wepy'
+
+  export default class Group extends wepy.component {
+    props = {
+      userInfo: {}
+    }
+
+    onLoad() {
+      // let userInfo = wepy.getStorageSync('userInfo')
+      this.leftTimer('2018/8/6 23:00')
+      if (wepy.getStorageSync('wxUserInfo')) {
+        //  存在用户授权openType成为share
+
+      } else {
+        //  不存在授权需要将opentype改值
+        this.openType = 'getUserInfo'
+        this.$apply()
+      }
+    }
+
+
+    data = {
+      time: '0天0小时0分0秒',
+      ordertimer: {},
+      openType: 'share'
+    }
+    components = {}
+    methods = {
+      // 绑定用户状态并且上传用户
+      bindGetUserInfo(e) {
+        console.log(e.detail.userInfo)
+        if (e.detail.userInfo) {
+          wepy.setStorageSync('wxUserInfo', e.detail.userInfo)
+          wepy.reLaunch({
+            url: '/pages/index'
+          })
+          console.log(e.detail.userInfo)
+        } else {
+          wepy.setStorageSync('wxUserInfo', {
+            "nickName": null,
+            "gender": 1,
+            "language": "zh_CN",
+            "city": "",
+            "province": "",
+            "country": "Solomon Islands",
+            "avatarUrl": null
+          })
+        }
+      },
+      jumpToRule() {
+        wepy.navigateTo({
+          url: '/pages/webView?type=rule_cj'
+        })
+      }
+    }
+
+
+    leftTimer(v) {
+      let leftTime = (new Date(v)) - new Date()
+      let days = parseInt(leftTime / 1000 / 60 / 60 / 24, 10)
+      let hours = parseInt(leftTime / 1000 / 60 / 60 % 24, 10)
+      let minutes = parseInt(leftTime / 1000 / 60 % 60, 10)
+      let seconds = parseInt(leftTime / 1000 % 60, 10)
+      console.log(leftTime)
+      days = this.checkTime(days)
+      hours = this.checkTime(hours)
+      minutes = this.checkTime(minutes)
+      seconds = this.checkTime(seconds)
+      if (days >= 0 || hours >= 0 || minutes >= 0 || seconds >= 0) {
+        this.time = days + '天' + hours + '小时' + minutes + '分'
+        this.$apply()
+      }
+      if (days <= 0 && hours <= 0 && minutes <= 0 && seconds <= 0) {
+        this.time = '0天0小时0分'
+        this.$apply()
+      }
+    }
+
+    checkTime(i) {
+      if (i < 10) {
+        i = '0' + i
+      }
+      return i
+    }
+
+    go(v) {
+      console.log(v)
+      let that = this
+      let date1 = new Date()
+      let data2 = new Date(v)
+      if (data2 < date1) return
+      that.ordertimer = setInterval(function () {
+        that.leftTimer(data2)
+      }, 1000)
+    }
+  }
+
+</script>

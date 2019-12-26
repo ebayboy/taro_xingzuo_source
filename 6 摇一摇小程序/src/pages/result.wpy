@@ -1,0 +1,61 @@
+<style lang="less">
+  page {
+    background: #eeeeee;
+  }
+
+  view {
+    text-align: center;
+    font-size: unit(30, rpx);
+    padding: unit(60, rpx);
+  }
+</style>
+<template>
+  <repeat for="{{userData}}" item="item">
+    <view>
+      {{item.phone}} 摇动次数：{{item.shake}}
+    </view>
+  </repeat>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import wxCommon from '../mixins/wxCommon'
+
+  export default class result extends wepy.page {
+    config = {
+      navigationBarTitleText: '摇一摇'
+    }
+    components = {}
+
+    data = {
+      userData: []
+    }
+    mixins = [wxCommon]
+
+    methods = {}
+
+    // 获取所有的排行榜人数
+    getResult(code) {
+      const that = this
+      that.userRequest('/shake/api/activity/getData/' + code, 'get', {}, function (res) {
+        if (res.data.code === 0) {
+          that.userData = res.data.data
+          that.$apply()
+        }
+      })
+    }
+
+    onLoad(options) {
+      // 10秒后获取所有的排行榜人数
+      const that = this
+      wepy.showLoading({
+        title:'等待10s'
+      })
+      setTimeout(() => {
+        wepy.hideLoading()
+        that.getResult(options.code)
+      }, 10000)
+    }
+
+  }
+</script>

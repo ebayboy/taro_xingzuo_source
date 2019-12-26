@@ -1,0 +1,59 @@
+<style lang="less">
+  .common_img_btn {
+    border: none !important;
+    padding: 0 !important;
+    background-color: rgba(0, 0, 0, 0) !important;
+  }
+
+  button[class^="common"]::after {
+    border: 0;
+  }
+
+  .pageButton {
+    position: fixed;
+    width: 60vw;
+    top: 0;
+    left: 20vw;
+  }
+</style>
+<template>
+  <form bindsubmit="formSubmit" report-submit="true">
+    <!--绑定按钮上的三个事件-->
+    <button class="common_img_btn pageButton" @tap="someFun()" formType="submit" open-type="getUserInfo"
+            bindgetuserinfo="onGotUserInfo">
+      <image src="../public/testImg.png" mode="widthFix"
+             style="width: 100%"></image>
+    </button>
+  </form>
+  <!--<button>-->
+    <!--<image src="../public/testImg.png" mode="widthFix"-->
+           <!--style="width: 80%"></image>-->
+  <!--</button>-->
+</template>
+
+<script>
+  import wepy from 'wepy'
+
+  export default class image extends wepy.page {
+
+    data = {
+      wordData: "Hello World!"
+    }
+
+    methods = {
+      someFun() {
+        wepy.showModal({
+          title: '提示',
+          content: '用户点击图片事件'
+        })
+      },
+      onGotUserInfo(e) {
+        console.log(e.detail)
+      },
+      formSubmit(e) {
+        console.log(e.detail.formId)
+      }
+    }
+
+  }
+</script>

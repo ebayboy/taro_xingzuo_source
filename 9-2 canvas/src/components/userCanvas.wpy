@@ -1,0 +1,26 @@
+<style lang="less">
+  .myCanvas {
+    width: 80vw;
+    height: 70vh;
+    background-color: #fff;
+  }
+</style>
+<template>
+    <canvas canvas-id="shareCanvas" class="myCanvas" width="400" height="700"></canvas>
+</template>
+<script>
+  import wepy from 'wepy';
+
+  export default class userCanvas extends wepy.component {
+    data = {
+      textValue: ''
+    };
+
+    events = {};
+
+    methods = {};
+
+    onLoad() {
+    }
+  }
+</script>

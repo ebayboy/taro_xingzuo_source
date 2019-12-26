@@ -1,0 +1,87 @@
+<style lang="less">
+  page {
+    background: #eeeeee;
+  }
+
+  view {
+    text-align: center;
+    font-size: unit(30, rpx);
+    padding: unit(60, rpx);
+  }
+</style>
+<template>
+  <view>
+    {{phone}}
+  </view>
+  <button open-type="getPhoneNumber" bindgetphonenumber="getPhoneNumber">点击获得电话</button>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import wxCommon from '../mixins/wxCommon'
+
+  export default class index extends wepy.page {
+    config = {
+      navigationBarTitleText: '获取用户的运动数据'
+    }
+    components = {}
+
+    data = {
+      phone: '暂时未获得'
+    }
+    mixins = [wxCommon]
+
+    methods = {
+      getPhoneNumber(e) {
+        const that = this
+        console.log(e.detail.errMsg)
+        console.log(e.detail.iv)
+        console.log(e.detail.encryptedData)
+        that.userRequest('/wxUserCommon/api/getUserPhone', 'post', {
+          encryptedData: e.detail.encryptedData,
+          iv: e.detail.iv
+        }, (res) => {
+          if (res.data.code === 0) {
+            that.phone = res.data.data
+          } else {
+            wepy.showModal({
+              title: '提示',
+              content: res.data.message
+            })
+          }
+        })
+      }
+    }
+
+    onLoad() {
+      const that = this
+
+      this.userLogin(() => {
+        //  登陆成功后获取用户的运动信息
+        that.getRunData()
+      })
+    }
+
+    getRunData() {
+      const that = this
+      console.log('更新用户的运动数据')
+      wx.getWeRunData({
+        success(res) {
+          that.userRequest('/wxUserCommon/api/getUserStep', 'post', {
+            encryptedData: res.encryptedData,
+            iv: res.iv
+          }, function (res) {
+            if (res.data.code === 0) {
+              wepy.setStorageSync('step', res.data.data)
+            } else {
+              wepy.showModal({
+                title: '错误',
+                content: res.data.message + res.data.code
+              })
+            }
+          })
+        }
+      })
+    }
+  }
+</script>

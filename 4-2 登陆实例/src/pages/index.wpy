@@ -1,0 +1,31 @@
+<style lang="less">
+</style>
+<template>
+
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import wxCommon from '../mixins/wxCommon'
+
+  export default class index extends wepy.page {
+    config = {
+      navigationBarTitleText: '用户登陆'
+    }
+    components = {}
+
+    mixins = [wxCommon]
+
+    onLoad() {
+      wepy.login().then((res) => {
+        console.log(res)
+      })
+      // // 用户登录
+      // const that = this
+      // this.userLogin(() => {
+      //   // 需要登陆后操作的内容
+      //
+      // })
+    }
+  }
+</script>

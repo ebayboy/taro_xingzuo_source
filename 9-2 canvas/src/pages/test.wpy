@@ -1,0 +1,240 @@
+<style>
+  .page {
+    background-color: #fef7d1;
+    background-repeat: no-repeat;
+    background-size: 100vw, 100vh;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  .panel {
+    background-color: #f6efc8;
+    width: 80%;
+    height: 40vh;
+    margin-left: 10%;
+    border-radius: 1rem;
+    box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.1);
+    text-align: center;
+  }
+
+  .answer {
+    padding: 10px;
+  }
+</style>
+<template>
+  <view class="page">
+    <view style="padding-top: 10vh;">
+      <view class="panel">
+
+        <view style="display:{{cShow}}">.
+          <userCanvas></userCanvas>
+          <!--<image src="{{imgUrl}}"></image>-->
+        </view>
+        <view style="font-size: 15px;display:{{tShow}}">
+          <view style="border-bottom: 1px solid #dbdbdb; padding: 10px;">
+            {{question}} {{textValue}}
+          </view>
+          <view class="answer" @tap="tap(0)">
+            A.{{answerList[0]}}
+          </view>
+          <view class="answer" @tap="tap(1)">
+            B.{{answerList[1]}}
+          </view>
+          <view class="answer" @tap="tap(2)">
+            C.{{answerList[2]}}
+          </view>
+          <view class="answer" @tap="tap(3)">
+            D.{{answerList[3]}}
+          </view>
+        </view>
+      </view>
+    </view>
+    <view style="padding-top: 10%;display:{{tShow}}">
+      <button bind:tap="eventDraw" style="width: 70%">绘制</button>
+    </view>
+  </view>
+</template>
+<script>
+  import wepy from 'wepy';
+  import userCanvas from '../components/userCanvas';
+
+  export default class test extends wepy.page {
+    onLoad(options) {
+      console.log(options);
+      // this.$parent.userLogin(function () {
+      // })
+    }
+
+    onShow() {
+      //  需要用户登陆
+    }  // 在Page和Component共用的生命周期函数
+    components = {
+      userCanvas: userCanvas
+    };
+    config = {};  // 只在Page实例中存在的配置数据，对应于原生的page.json文件
+    data = {
+      cShow: 'none',
+      tShow: 'true',
+      question: '您最爱的数字是',
+      answerList: ['选择1', '选择2', '选择3', '选择4'],
+      textValue: '______',
+      imgUrl: ''
+    };  // 页面所需数据均需在这里声明，可用于模板数据绑定
+    methods = {
+      tap(num) {
+        this.textValue = this.answerList[num];
+        this.$apply();
+      },
+      eventDraw() {
+        const that = this;
+        const ctx = wepy.createCanvasContext('shareCanvas');
+        ctx.drawImage('../public/bg.png', 0, 0, 400, 700);
+        ctx.setTextAlign('center');
+        ctx.setFillStyle('#fff');
+        ctx.setFontSize(20);
+        ctx.fillText(this.question + this.textValue, 300 / 2, 100);
+        ctx.draw(false, function() {
+          setTimeout(() => {
+            wepy.canvasToTempFilePath({
+              canvasId: 'shareCanvas' ,
+              quality: 0.9,
+              x: 0,
+              y: 0
+            }).then(res => {
+              console.log('++++++++++++++++  wx.canvasToTempFilePath:', res);
+              wepy.saveImageToPhotosAlbum({ filePath: res.tempFilePath })
+            });
+          }, 700);
+          // wepy.canvasToTempFilePath({ canvasId: 'shareCanvas' }).then(res => {
+          //   // console.log(res.tempFilePath);
+          //   // that.imgUrl = res.tempFilePath;
+          //   // that.$apply();
+          //   console.log(11111111);
+          //   wx.saveImageToPhotosAlbum({ filePath: res.tempFilePath }).then((res1) => {
+          //     console.log(res1);
+          //     console.log(11111111);
+          //     wepy.showToast({ title: '已保存到相册' });
+          //   }).then((res2) => {
+          //     console.log(22222222222222);
+          //     console.log(res2);
+          //   });
+          // });
+        });
+
+        this.cShow = 'true';
+        this.tShow = 'none';
+        this.$apply();
+        wepy.showLoading({
+          title: '绘制分享图片中',
+          mask: true,
+          duration: 2000
+        }).then(() => {
+
+        });
+      },
+      eventGetImage(event) {
+        console.log(event);
+        wepy.hideLoading();
+        const { tempFilePath, errMsg } = event.detail;
+        if (errMsg === 'canvasdrawer:ok') {
+          this.setData({
+            shareImage: tempFilePath
+          });
+        }
+      },
+      // 绑定用户状态并且上传用户
+      bindGetUserInfo(e) {
+        let wxUserInfo = {
+          'nickName': null,
+          'gender': 1,
+          'language': 'zh_CN',
+          'city': '',
+          'province': '',
+          'country': 'Solomon Islands',
+          'avatarUrl': null
+        };
+        if (e.detail.userInfo) {
+          wxUserInfo = e.detail.userInfo;
+          wepy.setStorageSync('wxUserInfo', e.detail.userInfo);
+          console.log(e.detail.userInfo);
+        } else {
+
+        }
+        wepy.setStorageSync('wxUserInfo', wxUserInfo);
+        this.$parent.userRequest('china-joy/api/info', 'post', wxUserInfo, function(res) {
+          wepy.reLaunch({
+            url: '/pages/active'
+          });
+        });
+
+      },
+
+      //  点赞
+      dianzan() {
+        let activeUserInfo = wepy.getStorageSync('activeUserInfo');
+        if (activeUserInfo.has_phone) {
+          this.sendDianzan();
+        } else {
+          //无手机号历史时绑定新电话
+          if (this.checkPhone(this.bindPhone)) {
+            this.$parent.userRequest('china-joy/api/user/bindPhone', 'post', { phone: this.bindPhone }, function(res) {
+
+            });
+            this.sendDianzan();
+
+          } else {
+            wepy.showModal({
+              title: '请输入正确的手机号'
+            });
+          }
+        }
+      }
+    };
+
+    sendDianzan() {
+      this.$parent.userRequest('china-joy/api/like/' + this.userIdNow, 'get', null, function(res) {
+        if (res.data.code === 1) {
+          wepy.showModal({
+            title: res.data.message
+          }).then((res) => {
+            if (res.confirm) {
+              wepy.reLaunch({
+                url: '/pages/index'
+              });
+            } else if (res.cancel) {
+              console.log('用户点击取消');
+            }
+          });
+        } else {
+          wepy.showModal({
+            title: '点赞成功'
+          }).then((res) => {
+            if (res.confirm) {
+              wepy.reLaunch({
+                url: '/pages/index'
+              });
+            } else if (res.cancel) {
+              console.log('用户点击取消');
+            }
+          });
+        }
+      });
+    }
+
+    bindPhoneInput(e) {
+      this.bindPhone = e.detail.value;
+    }
+
+    checkPhone(phone) {
+      // console.log(phone)
+      // 手机号正则
+      let phoneReg = /(^1[3|4|5|7|8]\d{9}$)|(^09\d{8}$)/;
+      // 电话
+      if (!phoneReg.test(phone)) {
+        return false;
+      } else {
+        return true;
+      }
+    }
+  }
+</script>

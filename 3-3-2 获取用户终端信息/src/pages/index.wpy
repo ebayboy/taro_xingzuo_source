@@ -1,0 +1,47 @@
+<style lang="less">
+</style>
+<template>
+
+</template>
+
+<script>
+  import wepy from 'wepy'
+
+  export default class Index extends wepy.page {
+    config = {
+      navigationBarTitleText: 'test'
+    }
+    components = {}
+
+    mixins = [testMixin]
+
+    data = {
+      phoneInfo: {}
+    }
+
+    computed = {}
+
+    methods = {}
+
+    onLoad() {
+      this.getPhoneInfo()
+    }
+
+    // 通过获取用户的手机屏幕尺寸来控制图片和画布大小
+    getPhoneInfo() {
+      let system = wx.getStorageSync('system')
+      if (!system) {
+        try {
+          system = wx.getSystemInfoSync()
+          // 缓存
+          wx.setStorageSync('system', system)
+        } catch (e) {
+          // Do something when catch error
+          console.log('出现错误')
+        }
+      }
+      this.phoneInfo = system
+      this.$apply()
+    }
+  }
+</script>
